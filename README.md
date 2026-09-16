@@ -1,4 +1,6 @@
-# Differential Equations
+# Numerics Project
+
+Solves differential equations using numerical methods, in particular the finite element method.
 
 ## Schrödinger Eigenvalue Problem
 
