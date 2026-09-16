@@ -1,7 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt # plotting
 from numpy.polynomial.legendre import leggauss # for integrating hat basis
-from scipy.linalg import eigh # generalized eigenvalue problem
+from scipy.sparse.linalg import eigsh # generalized eigenvalue problem
+from scipy.sparse import diags
 
 
 # potential
@@ -72,29 +73,38 @@ def b(i, j, nodes):
     # we could speed this up even further by using a two point gauss quadrature
     return quad
 
+# We use sparse matrices to store the matrices A and B since they are tridiagonal
 
 def build_matrices(nodes):
     N = len(nodes) - 2
 
-    A = np.zeros((N, N))
-    B = np.zeros((N, N))
-    
-    # the hat functions do not overlap when |i-j| > 1
-    # in this case their product and thus a(beta_i, beta_j)
-    # and b(beta_i, beta_j) vanish
-    # furthermore the matrices are symmetric
-    
+    A_diag = np.zeros(N)
+    A_off = np.zeros(N - 1)
+
+    B_diag = np.zeros(N)
+    B_off = np.zeros(N - 1)
+
     for i in range(1, N + 1):
-        A[i - 1, i - 1] = a(i, i, nodes)
-        B[i - 1, i - 1] = b(i, i, nodes)
+        A_diag[i - 1] = a(i, i, nodes)
+        B_diag[i - 1] = b(i, i, nodes)
 
         if i < N:
-            A[i - 1, i] = A[i, i - 1] = a(i, i + 1, nodes)
-            B[i - 1, i] = B[i, i - 1] = b(i, i + 1, nodes)
+            A_off[i - 1] = a(i, i + 1, nodes)
+            B_off[i - 1] = b(i, i + 1, nodes)
 
+    A = diags(
+        [A_off, A_diag, A_off],
+        offsets=[-1, 0, 1],
+        format="csr"
+    )
+
+    B = diags(
+        [B_off, B_diag, B_off],
+        offsets=[-1, 0, 1],
+        format="csr"
+    )
 
     return A, B
-
 
 # number of interior nodes
 N = 20
@@ -104,10 +114,25 @@ nodes = np.linspace(-1, 1, N + 2) # N + 2 equally spaced nodes
 # we ignore the endpoints since the function we're interpolating is zero there
 
 # build matrices
+
 A, B = build_matrices(nodes)
 
 # solve A c = lambda B c
-eigenvalues, eigenvectors = eigh(A, B)
+# compute only the first five eigenpairs
+
+eigenvalues, eigenvectors = eigsh(
+    A,
+    k=5,
+    M=B,
+    sigma=0.0,
+    which="LM"
+)
+
+# sort from smallest to largest
+idx = np.argsort(eigenvalues)
+eigenvalues = eigenvalues[idx]
+eigenvectors = eigenvectors[:, idx]
+
 # eigenvectors is a matrix where the columns correspond to the eigenvectors
 # the eigenvectors are the coordinates of the eigenfunctions in the spline space
 
