@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
 from numpy.polynomial.legendre import leggauss
 from scipy.sparse.linalg import eigsh
 from scipy.sparse import diags
@@ -108,27 +107,47 @@ def build_matrices(nodes):
 
 # Convergence test
 
-# Different numbers of interior nodes
-N_values = [10, 20, 40, 80, 160, 320]
+# Use mesh sizes
+# h = 2^(-m),  m = 1, ..., m_max
+m_max = 8
 
 # Exact first eigenvalue for
-# -u'' = lambda u on (-1, 1), u(-1) = u(1) = 0
+# -u'' = lambda u on (-1, 1)
+# u(-1) = u(1) = 0
 lambda_exact = (np.pi / 2) ** 2
 
 h_values = []
 errors = []
+
 
 print("Exact first eigenvalue:")
 print(f"lambda_1 = {lambda_exact:.10f}")
 
 print("\nConvergence test:\n")
 
-for N in N_values:
+
+for m in range(1, m_max + 1):
+
+    # Desired mesh size
+    h = 2.0 ** (-m)
+
+    # The interval (-1, 1) has length 2.
+    #
+    # h = 2 / (N + 1)
+    #
+    # Therefore:
+    #
+    # N + 1 = 2 / h = 2^(m + 1)
+    #
+    # and hence
+    #
+    # N = 2^(m + 1) - 1
+    #
+    # where N is the number of interior nodes.
+    N = 2 ** (m + 1) - 1
+
     # Create the uniform mesh
     nodes = np.linspace(-1, 1, N + 2)
-
-    # Mesh size
-    h = 2 / (N + 1)
 
     # Build sparse FEM matrices
     A, B = build_matrices(nodes)
@@ -151,8 +170,9 @@ for N in N_values:
     errors.append(error)
 
     print(
-        f"N = {N:4d}, "
-        f"h = {h:.6f}, "
+        f"m = {m:2d}, "
+        f"N = {N:5d}, "
+        f"h = {h:.8f}, "
         f"lambda_h = {lambda_h:.10f}, "
         f"error = {error:.6e}"
     )
@@ -160,17 +180,18 @@ for N in N_values:
 
 # Compute convergence rates
 
-
 print("\nConvergence rates:")
 
-for i in range(1, len(N_values)):
+for i in range(1, len(h_values)):
+
     rate = (
         np.log(errors[i - 1] / errors[i])
         / np.log(h_values[i - 1] / h_values[i])
     )
 
     print(
-        f"N = {N_values[i - 1]:4d} -> {N_values[i]:4d}: "
+        f"h = {h_values[i - 1]:.8f} -> "
+        f"h = {h_values[i]:.8f}: "
         f"rate = {rate:.4f}"
     )
 
