@@ -110,7 +110,7 @@ def build_matrices(nodes):
 N = 20
 
 # partition: -1 = x0 < ... < xN+1 = 1
-nodes = np.linspace(-1, 1, N + 2) # N + 2 equally spaced nodes
+nodes = np.linspace(-5, 5, N + 2) # N + 2 equally spaced nodes
 # we ignore the endpoints since the function we're interpolating is zero there
 
 # build matrices
