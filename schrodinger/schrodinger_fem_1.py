@@ -5,9 +5,14 @@ from scipy.sparse.linalg import eigsh # generalized eigenvalue problem
 from scipy.sparse import diags
 
 
-# potential
+# Parameters for the potential
+potential_a = 1.0
+potential_b = 0.0
+
+# Potential
+# V(x) = a * (x^2 - 1)^2 + b*x
 def V(x):
-    return (x**2 - 1)**2
+    return potential_a * (x**2 - 1)**2 + potential_b * x
 
 
 # hat basis function beta_i
